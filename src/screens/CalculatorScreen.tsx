@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
   },
   picker: {
-    color: colors.text,
+    color: colors.textpicker,
   },
   resultCard: {
     marginTop: spacing.lg,

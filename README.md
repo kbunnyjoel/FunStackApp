@@ -78,6 +78,25 @@ Response:
 { "result": 21, "a": 3, "b": 7, "operator": "multiply" }
 ```
 
+### Deploying to Railway (recommended free tier)
+
+1. Push this repo (or just `calculator-api/`) to GitHub.
+2. In [Railway](https://railway.app) create a new project → **Deploy from GitHub** and pick the repo.
+3. If this is a monorepo, open the service → **Settings** → set **Root Directory** to `calculator-api`.
+4. Railway auto-detects Node. Verify the commands:
+   - Install command: `npm install`
+   - Start command: `npm start`
+5. Wait for the deploy. Copy the public URL shown under **Domains**, e.g. `https://funstack-calculator.up.railway.app`.
+6. Update `app.config.json`:
+
+```json
+{
+  "calculatorApiUrl": "https://funstack-calculator.up.railway.app"
+}
+```
+
+7. Restart Metro / rebuild so the new URL is bundled in the app.
+
 ### Deploying to Heroku
 
 1. `heroku create <your-app-name>`

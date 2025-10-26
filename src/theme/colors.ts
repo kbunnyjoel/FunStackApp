@@ -26,6 +26,7 @@ export const colors = {
   danger: palette.danger,
   warning: palette.warning,
   success: palette.mint,
+  textpicker: palette.aqua,
 };
 
 export const gradients = {

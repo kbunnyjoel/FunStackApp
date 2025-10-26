@@ -76,7 +76,7 @@ android {
 
     namespace "com.funstackapp"
     defaultConfig {
-        applicationId "com.funstackapp"
+        applicationId "com.example.funstackapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -102,6 +102,17 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def appName = "FunStackApp"
+            def versionName = variant.versionName
+            def versionCode = variant.versionCode
+            def buildType = variant.buildType.name
+            
+            outputFileName = "${appName}-v${versionName}-${buildType}.apk"
+        }
+    }
 }
 
 dependencies {
@@ -119,4 +130,5 @@ dependencies {
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
 apply plugin: "com.google.gms.google-services"
