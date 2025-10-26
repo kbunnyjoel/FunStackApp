@@ -1,0 +1,54 @@
+require_relative '../node_modules/react-native/scripts/react_native_pods'
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+
+def min_ios_version_supported
+  '15.1'
+end
+
+ENV['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
+platform :ios, min_ios_version_supported
+prepare_react_native_project!
+
+use_frameworks! :linkage => :static
+
+target 'FunStackApp' do
+  config = use_native_modules!
+  react_native_path = config[:reactNativePath] || File.expand_path('../node_modules/react-native', __dir__)
+  ENV['REACT_NATIVE_PATH'] = react_native_path
+
+  use_react_native!(
+    :path => react_native_path,
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  target 'FunStackAppTests' do
+    inherit! :complete
+  end
+
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'GTMSessionFetcher', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+  pod 'FirebaseAppCheckInterop', :modular_headers => true
+  pod 'FirebaseAuthInterop', :modular_headers => true
+  pod 'FirebaseAuth', :modular_headers => true
+  pod 'FirebaseFirestoreInternal', :modular_headers => true
+  pod 'FirebaseFirestore', :modular_headers => true
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+    )
+
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |configuration|
+        configuration.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
+        configuration.build_settings['SUPPORTED_PLATFORMS'] = 'iphonesimulator iphoneos'
+      end
+    end
+  end
+end
