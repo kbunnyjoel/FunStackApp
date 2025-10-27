@@ -1,6 +1,19 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Image, ScrollView, StyleSheet, Text, View} from 'react-native';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {
+  Alert,
+  Image,
+  PermissionsAndroid,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import {
+  Asset,
+  launchCamera,
+  launchImageLibrary,
+} from 'react-native-image-picker';
+import {Buffer} from 'buffer';
 
 import {PrimaryButton} from '../components/PrimaryButton';
 import {SurfaceCard} from '../components/SurfaceCard';
@@ -21,6 +34,23 @@ const pickerOptions = {
 };
 
 const estimateBytes = (base64: string) => Math.ceil((base64.length * 3) / 4);
+
+const toBase64 = async (asset: Asset) => {
+  if (asset.base64) {
+    return asset.base64;
+  }
+  if (!asset.uri) {
+    return null;
+  }
+  try {
+    const response = await fetch(asset.uri);
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer).toString('base64');
+  } catch (error) {
+    console.warn('Failed to convert asset to base64', error);
+    return null;
+  }
+};
 
 function PhotoScreen() {
   const [imageBase64, setImageBase64] = useState<string | null>(null);
@@ -51,14 +81,54 @@ function PhotoScreen() {
 
   const handleSelection = async (source: 'camera' | 'library') => {
     setStatus('');
+
+    if (source === 'camera') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'This app needs access to your camera.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert('Permission Denied', 'Camera permission was not granted.');
+          return;
+        }
+      } catch (err) {
+        console.warn(err);
+        return;
+      }
+    }
+
     const picker = source === 'camera' ? launchCamera : launchImageLibrary;
     const result = await picker(pickerOptions);
 
     if (result.didCancel) {
       return;
     }
+
+    if (result.errorCode) {
+      console.error(
+        `Image picker error: ${result.errorCode} - ${result.errorMessage}`,
+      );
+      Alert.alert(
+        'Camera Error',
+        `Code: ${result.errorCode}\nMessage: ${result.errorMessage}`,
+      );
+      return;
+    }
+
     const asset = result.assets?.[0];
-    if (!asset?.base64) {
+    if (!asset) {
+      return;
+    }
+
+    const base64Payload = await toBase64(asset);
+    if (!base64Payload) {
       Alert.alert(
         'Oops',
         'We could not read the image data. Try another photo.',
@@ -66,7 +136,7 @@ function PhotoScreen() {
       return;
     }
 
-    const approxBytes = estimateBytes(asset.base64);
+    const approxBytes = estimateBytes(base64Payload);
     if (approxBytes > APPROX_FIRESTORE_LIMIT) {
       Alert.alert(
         'Image too large',
@@ -77,7 +147,7 @@ function PhotoScreen() {
 
     try {
       setUploading(true);
-      await savePhoto(user.uid, asset.base64);
+      await savePhoto(user.uid, base64Payload);
       setStatus('Photo saved to Firestore.');
     } catch (error) {
       console.error(error);
